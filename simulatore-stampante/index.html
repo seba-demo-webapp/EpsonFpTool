@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulatore Stampante Fiscale Epson RT — FP-81 II</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --accent2:#22c55e;
+    --warn:#f59e0b; --err:#ef4444; --chip:#0ea5e9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.45}
+  header{background:linear-gradient(90deg,#0b1220,#16233b);padding:14px 20px;
+         border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:600}
+  header .sub{color:var(--muted);font-size:12px}
+  .status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;
+          background:#0b1220;padding:6px 12px;border-radius:20px;border:1px solid var(--line)}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--err);box-shadow:0 0 8px var(--err)}
+  .dot.on{background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+  .wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;max-width:1300px;margin:0 auto}
+  @media(max-width:960px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{font-size:14px;margin:0 0 12px;display:flex;align-items:center;gap:8px;color:var(--accent)}
+  .card h2 .n{background:var(--chip);color:#04293f;font-weight:700;border-radius:6px;
+              padding:1px 7px;font-size:12px}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+  input,select{width:100%;background:#0b1220;border:1px solid var(--line);color:var(--txt);
+        border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  input:disabled,select:disabled,button:disabled{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  button{background:var(--accent);color:#04293f;border:none;border-radius:8px;
+         padding:9px 14px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){filter:brightness(1.1)}
+  button.sec{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  button.danger{background:transparent;color:var(--err);border:1px solid var(--err);padding:6px 10px}
+  button.mini{padding:5px 9px;font-size:12px}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  td input,td select{padding:5px 7px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tab{padding:8px 14px;border-radius:8px;background:var(--panel2);cursor:pointer;font-size:13px;
+       border:1px solid transparent;color:var(--muted)}
+  .tab.active{background:var(--accent);color:#04293f;font-weight:600}
+  .tab:hover:not(.active){border-color:var(--line);color:var(--txt)}
+  .panel-sec{display:none}.panel-sec.active{display:block}
+  .console{background:#05080f;border:1px solid var(--line);border-radius:8px;padding:10px;
+           font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;height:280px;
+           overflow:auto;white-space:pre-wrap;color:#cbd5e1}
+  .console .tx{color:#7dd3fc}.console .rx{color:#86efac}.console .er{color:#fca5a5}
+  .console .ts{color:#64748b}
+  .receipt{background:#fdfdf7;color:#1a1a1a;font-family:ui-monospace,Menlo,Consolas,monospace;
+           font-size:12px;padding:16px;border-radius:6px;width:300px;margin:0 auto;
+           box-shadow:0 2px 12px rgba(0,0,0,.4);white-space:pre-wrap;line-height:1.4}
+  .receipt .c{text-align:center}.receipt hr{border:none;border-top:1px dashed #999;margin:6px 0}
+  .receipt .b{font-weight:700}
+  .hint{color:var(--muted);font-size:12px;margin:4px 0 0}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:20px;
+        padding:2px 9px;font-size:11px;color:var(--muted);margin-left:6px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent2);
+         color:#04240f;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13px;
+         opacity:0;transition:.3s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1}.toast.err{background:var(--err);color:#fff}
+  .add-row{margin-top:8px}
+  .flex-h{display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🖨️ Simulatore Stampante Fiscale Epson RT</h1>
+    <div class="sub">FP-81 II · comunicazione FPMate (XML su HTTP) — ambiente di test, nessuna stampante reale</div>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">Disconnessa</span></div>
+</header>
+
+<div class="wrap">
+  <!-- COLONNA SINISTRA: comandi -->
+  <div>
+    <!-- Connessione -->
+    <div class="card">
+      <h2><span class="n">1</span> Connessione</h2>
+      <div class="row">
+        <div style="flex:2"><label>Indirizzo IP stampante</label>
+          <input id="ip" value="192.168.1.251"></div>
+        <div><label>Timeout (ms)</label><input id="timeout" value="10000"></div>
+      </div>
+      <div class="hint">Endpoint simulato: <code id="endpoint">http://192.168.1.251/cgi-bin/fpmate.cgi</code></div>
+      <div class="row" style="margin-top:12px">
+        <button id="btnConnect" onclick="toggleConnect()">Connetti</button>
+        <button class="sec" onclick="pingPrinter()" id="btnPing" disabled>Test (ping stato)</button>
+      </div>
+    </div>
+
+    <!-- Sincronizzazione -->
+    <div class="card">
+      <h2><span class="n">⇅</span> Sincronizzazione dati</h2>
+      <p class="hint">All'avvio, appena connesso, il software <b>legge</b> la configurazione dalla stampante (comandi GET)
+        e la confronta con la propria, segnalando eventuali discrepanze. Best practice di sicurezza.</p>
+      <div class="row">
+        <button class="prog sec" onclick="readFromPrinter(true)" disabled>Leggi &amp; confronta</button>
+        <button class="prog sec" onclick="loadPrinterIntoSoftware()" disabled>Carica nel software</button>
+        <button class="prog" onclick="pushSoftwareToPrinter()" disabled>Scrivi sulla stampante</button>
+      </div>
+      <div id="syncResult" style="margin-top:12px"></div>
+    </div>
+
+    <!-- Programmazione -->
+    <div class="card">
+      <h2><span class="n">2</span> Programmazione</h2>
+      <div class="tabs">
+        <div class="tab active" data-tab="head" onclick="setTab('head')">Intestazione</div>
+        <div class="tab" data-tab="vat" onclick="setTab('vat')">Aliquote IVA</div>
+        <div class="tab" data-tab="dep" onclick="setTab('dep')">Reparti</div>
+        <div class="tab" data-tab="pay" onclick="setTab('pay')">Pagamenti</div>
+      </div>
+
+      <!-- Intestazione -->
+      <div class="panel-sec active" id="sec-head">
+        <p class="hint">Righe intestazione: max <b>16 righe</b>, <b>40 caratteri</b> ciascuna. Comando <b>3-016</b>.
+          Per legge devono contenere ragione sociale, indirizzo e P.IVA — ma la stampante le tratta come testo libero numerato.
+          La <b>riga 01</b> (ragione sociale) azzera automaticamente le righe successive quando inviata.</p>
+        <div id="headLines"></div>
+        <div class="add-row"><button class="sec mini" id="btnAddHead" onclick="addHeadLine()">+ aggiungi riga</button>
+          <span class="pill" id="headCount"></span></div>
+        <div class="row" style="margin-top:12px">
+          <button onclick="programHeader()" class="prog" disabled>Invia righe</button>
+          <button onclick="previewHeader()" class="prog sec" disabled>Anteprima (98)</button>
+          <button onclick="commitHeader()" class="prog" disabled>Conferma in memoria (99)</button>
+        </div>
+        <div class="hint" id="headStatus"></div>
+      </div>
+
+      <!-- IVA -->
+      <div class="panel-sec" id="sec-vat">
+        <p class="hint">🔒 Aliquote IVA <b>bloccate</b> sul set standard. Sono la tabella fiscale: si impostano una sola volta
+          in fase di installazione e non vanno modificate (due gruppi non possono avere la stessa aliquota — Errore 13).
+          La flessibilità è sui <b>reparti</b>, che puoi associare liberamente a queste aliquote. Comando <b>4-005</b> (richiede giornata chiusa).</p>
+        <table><thead><tr><th>Gruppo</th><th>Aliquota %</th><th>Descrizione</th></tr></thead>
+          <tbody id="vatRows"></tbody></table>
+        <div style="margin-top:12px"><button onclick="programVat()" class="prog" disabled>Invia aliquote standard (solo setup iniziale)</button></div>
+      </div>
+
+      <!-- Reparti -->
+      <div class="panel-sec" id="sec-dep">
+        <p class="hint">Reparti (1–99): ogni reparto lega prodotti/servizi a un gruppo IVA. Comando <b>4-002</b>.</p>
+        <table><thead><tr><th>N</th><th>Descrizione</th><th>Gruppo IVA</th><th>Tipo</th><th></th></tr></thead>
+          <tbody id="depRows"></tbody></table>
+        <div class="add-row"><button class="sec mini" onclick="addDep()">+ aggiungi reparto</button></div>
+        <div style="margin-top:12px"><button onclick="programDeps()" class="prog" disabled>Programma reparti</button></div>
+      </div>
+
+      <!-- Pagamenti -->
+      <div class="panel-sec" id="sec-pay">
+        <p class="hint">Descrizioni pagamenti: contanti <b>4-053</b>, carte <b>4-007</b>, ticket <b>4-010</b>.</p>
+        <table><thead><tr><th>Tipo</th><th>Indice</th><th>Descrizione</th><th>Valore €</th><th></th></tr></thead>
+          <tbody id="payRows"></tbody></table>
+        <div class="add-row"><button class="sec mini" onclick="addPay()">+ aggiungi pagamento</button></div>
+        <div style="margin-top:12px"><button onclick="programPays()" class="prog" disabled>Programma pagamenti</button></div>
+      </div>
+    </div>
+
+    <!-- Prova vendita -->
+    <div class="card">
+      <h2><span class="n">3</span> Prova: emetti documento commerciale</h2>
+      <p class="hint">Usa i reparti e i pagamenti programmati per simulare uno scontrino.</p>
+      <table><thead><tr><th>Articolo</th><th>Q.tà</th><th>Prezzo €</th><th>Reparto</th><th></th></tr></thead>
+        <tbody id="saleRows"></tbody></table>
+      <div class="add-row"><button class="sec mini" onclick="addSale()">+ riga</button></div>
+      <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
+        <label style="display:flex;align-items:center;gap:8px;color:var(--txt);margin:0">
+          <input type="checkbox" id="chkSegue" style="width:auto" onchange="state.segue.enabled=this.checked;toggleSegue();save()">
+          Chiudi come <b>&nbsp;Non riscosso – Segue fattura</b>&nbsp;(tipo 5 / indice 03)
+        </label>
+        <div id="segueFields" style="display:none;margin-top:8px">
+          <div class="row">
+            <div><label>Identificativo cliente</label>
+              <select id="segueType" onchange="state.segue.idType=this.value;save();renderReceipt()">
+                <option value="piva">Partita IVA (1-060)</option>
+                <option value="cf">Codice Fiscale (1-061)</option>
+              </select></div>
+            <div><label>Codice</label><input id="segueCode" oninput="state.segue.code=this.value;save();renderReceipt()"></div>
+          </div>
+          <label>Ragione sociale / nominativo (per il documento gestionale)</label>
+          <input id="segueName" oninput="state.segue.name=this.value;save()">
+          <label>Indirizzo cliente</label>
+          <input id="segueAddr" oninput="state.segue.addr=this.value;save()">
+          <p class="hint">Verrà emesso il documento commerciale con i dati cliente (1-060/1-061) e, a seguire, un
+            <b>documento gestionale</b> con riga per la firma (1-063/064/065).
+            ⚠️ La firma è una prassi commerciale, non un obbligo della normativa corrispettivi.</p>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <select id="salePay"></select>
+        <button onclick="emitReceipt()" class="prog" disabled style="flex:0 0 auto">Emetti scontrino</button>
+      </div>
+    </div>
+
+    <!-- Numerazione & matricola -->
+    <div class="card">
+      <h2><span class="n">4</span> Numerazione documenti &amp; matricola</h2>
+      <p class="hint">Il numero documento è gestito dalla <b>stampante</b>, non dal software (formato ZZZZ-xxxx).
+        Una <b>vendita da tastiera</b> lo incrementa senza che il software lo sappia: il software si riallinea
+        interrogando <b>1-070</b>. La <b>matricola</b> (3-217) identifica univocamente l'RT.
+        Dopo ogni vendita il software salva i dati univoci: n° documento, matricola, data e ora.</p>
+      <div class="row">
+        <button class="prog sec" onclick="keyboardSale()" disabled>⌨️ Vendita da tastiera</button>
+        <button class="prog sec" onclick="queryDocNumber()" disabled>Interroga n° doc (1-070)</button>
+        <button class="prog sec" onclick="querySerial()" disabled>Interroga matricola (3-217)</button>
+      </div>
+      <div id="numStatus" style="margin-top:10px;font-size:13px"></div>
+      <div style="margin-top:12px"><b style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Registro documenti salvati dal software</b></div>
+      <div id="docRegistry"></div>
+
+      <!-- Pannello reso merce -->
+      <div id="resoCard" style="display:none;margin-top:14px;border:1px dashed var(--accent);border-radius:10px;padding:12px">
+        <h2 style="margin-top:0"><span class="n">↩︎</span> Reso merce — rif. <span id="resoRef"></span></h2>
+        <p class="hint">Indica le quantità da rendere (anche parziale). Apre un documento di reso (1-078 REFUND) con righe di reso (1-081) riferite all'originale.</p>
+        <table><thead><tr><th>Articolo</th><th>Venduti</th><th>Rendi</th><th>Prezzo €</th></tr></thead><tbody id="resoRows"></tbody></table>
+        <div class="flex-h" style="margin-top:10px">
+          <div>Totale reso: <b id="resoTotal">0.00</b> €</div>
+          <div><button class="sec mini" onclick="closeReso()">Chiudi</button>
+            <button class="danger mini" onclick="emitReso()">Emetti reso</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLONNA DESTRA: console + anteprima -->
+  <div>
+    <div class="card">
+      <h2 class="flex-h"><span><span class="n">⇄</span> Console comunicazione XML</span>
+        <button class="sec mini" onclick="clearConsole()">pulisci</button></h2>
+      <div class="console" id="console"></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">📄</span> Anteprima documento / stato</h2>
+      <div class="receipt" id="receipt"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ STATO ============
+const state = {
+  connected:false,
+  counter:0,
+  headerCommitted:false,
+  header:["LA MIA AZIENDA SRL","Via Roma 1 - 00100 Roma","P.IVA 01234567890"],
+  vat:[ {g:1,p:22,d:"IVA 22%"},{g:2,p:10,d:"IVA 10%"},{g:3,p:5,d:"IVA 5%"},{g:4,p:4,d:"IVA 4%"} ],
+  deps:[ {n:1,desc:"ALIMENTARI",vat:4,type:"beni"},{n:2,desc:"BEVANDE",vat:2,type:"beni"},
+         {n:3,desc:"SERVIZI",vat:1,type:"servizi"} ],
+  pays:[ {type:0,idx:0,desc:"CONTANTI",val:null},{type:2,idx:1,desc:"CARTA DI CREDITO",val:null},
+         {type:3,idx:1,desc:"TICKET RESTAURANT",val:8.00} ],
+  sale:[ {desc:"PANE",qty:1,price:1.20,dep:1},{desc:"ACQUA",qty:2,price:0.50,dep:2} ],
+  segue:{enabled:false,idType:"piva",code:"12345678901",name:"CLIENTE SPA",addr:"Via Milano 10 - 20100 Milano"},
+  serial:null,        // matricola letta dalla stampante (3-217)
+  swNextDoc:null,     // numero documento che il SOFTWARE crede sia il prossimo
+  lastAssigned:null,  // ultimo numero realmente assegnato dalla stampante
+  savedDocs:[],       // registro documenti salvati dal software (dati univoci)
+  lastReceiptNo:0
+};
+const PAY_TYPES = {0:"Contanti",1:"Assegni",2:"Credito/Carta",3:"Ticket singolo",4:"Ticket multipli",5:"Non riscosso",6:"Sconto a pagare"};
+
+// Aliquote IVA standard: bloccate, si impostano una sola volta all'installazione
+const DEFAULT_VAT=[{g:1,p:22,d:"IVA 22%"},{g:2,p:10,d:"IVA 10%"},{g:3,p:5,d:"IVA 5%"},{g:4,p:4,d:"IVA 4%"}];
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+// Memoria simulata della STAMPANTE (volutamente diversa dal software per mostrare il confronto)
+const printer={
+  serial:"99IEB001234",   // matricola RT (99 + I device type + EB modello FP-81 II nativo + numero)
+  zNum:1,                 // numero chiusura Z corrente
+  nextDoc:8,              // numero del PROSSIMO documento (gestito dalla stampante)
+  lastDoc:null,           // info ultimo documento emesso (per 1-387)
+  header:["AZIENDA VECCHIA SNC","Via Roma 1 - 00100 Roma","P.IVA 01234567890"],
+  vat:clone(DEFAULT_VAT),
+  deps:[{n:1,desc:"ALIMENTARI",vat:4,type:"beni"},{n:2,desc:"BAR",vat:3,type:"beni"}],
+  pays:[{type:0,idx:0,desc:"CONTANTI",val:null},{type:2,idx:1,desc:"BANCOMAT",val:null}]
+};
+
+// persistenza locale (funziona aprendo il file nel browser)
+try{ const s=localStorage.getItem("rtsim"); if(s) Object.assign(state, JSON.parse(s)); state.connected=false; }catch(e){}
+state.vat=clone(DEFAULT_VAT); // aliquote sempre forzate sul set standard (bloccate)
+function save(){ try{ localStorage.setItem("rtsim", JSON.stringify(state)); }catch(e){} }
+
+// ============ UTIL ============
+const $=id=>document.getElementById(id);
+function toast(msg,err){const t=$("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");
+  setTimeout(()=>t.className="toast",2200);}
+function now(){return new Date().toLocaleTimeString("it-IT");}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function money(n){return Number(n).toFixed(2);}
+function log(kind,txt){const c=$("console");const cls=kind==="tx"?"tx":kind==="rx"?"rx":kind==="er"?"er":"";
+  c.innerHTML+=`<span class="ts">[${now()}]</span> <span class="${cls}">${esc(txt)}</span>\n`;
+  c.scrollTop=c.scrollHeight;}
+function clearConsole(){$("console").innerHTML="";}
+
+// ============ SIMULAZIONE INVIO ============
+// Simula POST HTTP dell'XML FPMate e la risposta della stampante.
+function sendXml(xml, opts={}){
+  return new Promise(resolve=>{
+    state.counter = (state.counter % 99) + 1;
+    log("tx", `→ POST ${$("endpoint").textContent}\n${xml}`);
+    setTimeout(()=>{
+      if(!state.connected && !opts.allowOffline){
+        const r=`<response success="false" code="NETWORK_ERROR" status="offline" />`;
+        log("er","← "+r); resolve({success:false,code:"NETWORK_ERROR"}); return;
+      }
+      // validazione simulata
+      let err=opts.validate?opts.validate():null;
+      if(err){ const r=`<response success="false" code="${err.code}" status="${err.status||''}" />`;
+        log("er","← "+r); resolve({success:false,code:err.code}); return; }
+      const recAttr = opts.receiptNo ? ` fiscalReceiptNumber="${opts.receiptNo}"` : "";
+      const r=`<response success="true" code="" status="2 - STATO REGISTRAZIONE"${recAttr} />`;
+      log("rx","← "+r);
+      resolve({success:true});
+    }, 280);
+  });
+}
+
+// ============ CONNESSIONE ============
+function refreshEndpoint(){ $("endpoint").textContent=`http://${$("ip").value}/cgi-bin/fpmate.cgi`; }
+$("ip").addEventListener("input",refreshEndpoint);
+function setConnUI(){
+  $("dot").className="dot"+(state.connected?" on":"");
+  $("statusText").textContent=state.connected?("Connessa · "+$("ip").value):"Disconnessa";
+  $("btnConnect").textContent=state.connected?"Disconnetti":"Connetti";
+  $("btnPing").disabled=!state.connected;
+  document.querySelectorAll(".prog").forEach(b=>b.disabled=!state.connected);
+}
+function toggleConnect(){
+  if(state.connected){ state.connected=false; log("","— Disconnesso —"); $("syncResult").innerHTML=""; setConnUI(); return; }
+  log("","— Tentativo di connessione a "+$("ip").value+" —");
+  state.connected=true; state.counter=0;
+  setConnUI();
+  // handshake: lettura stato per sincronizzare il contatore (come da protocollo)
+  sendXml(`<printerCommand><queryPrinterStatus/></printerCommand>`,{allowOffline:true})
+    .then(async()=>{ toast("Stampante connessa");
+      await readFromPrinter(true);   // lettura+confronto configurazione
+      await querySerial();           // legge la matricola
+      await queryDocNumber();        // allinea il numero documento
+    });
+  save();
+}
+
+// ============ SINCRONIZZAZIONE DATI (lettura/confronto) ============
+function refreshSync(){ if(state.connected) renderSync(compareConfig()); }
+function compareConfig(){
+  const diffs=[];
+  const maxH=Math.max(state.header.length,printer.header.length);
+  for(let i=0;i<maxH;i++){
+    const s=state.header[i]??"(assente)", p=printer.header[i]??"(assente)";
+    if(s!==p) diffs.push({area:"Intestazione riga "+String(i+1).padStart(2,"0"), sw:s, pr:p});
+  }
+  const nums=[...new Set([...state.deps.map(d=>d.n),...printer.deps.map(d=>d.n)])].sort((a,b)=>a-b);
+  nums.forEach(n=>{
+    const s=state.deps.find(d=>d.n===n), p=printer.deps.find(d=>d.n===n);
+    const sd=s?`${s.desc} · Gr.${s.vat} · ${s.type}`:"(assente)";
+    const pd=p?`${p.desc} · Gr.${p.vat} · ${p.type}`:"(assente)";
+    if(sd!==pd) diffs.push({area:"Reparto "+n, sw:sd, pr:pd});
+  });
+  const maxP=Math.max(state.pays.length,printer.pays.length);
+  for(let i=0;i<maxP;i++){
+    const s=state.pays[i], p=printer.pays[i];
+    const sd=s?`${s.desc} (tipo ${s.type}/${s.idx})`:"(assente)";
+    const pd=p?`${p.desc} (tipo ${p.type}/${p.idx})`:"(assente)";
+    if(sd!==pd) diffs.push({area:"Pagamento "+(i+1), sw:sd, pr:pd});
+  }
+  return diffs;
+}
+function renderSync(diffs){
+  const el=$("syncResult"); if(!el) return;
+  if(diffs===null){ el.innerHTML=""; return; }
+  if(diffs.length===0){ el.innerHTML='<div style="color:var(--accent2)">✅ Configurazione software e stampante allineate.</div>'; return; }
+  let h=`<div style="color:var(--warn);margin-bottom:6px">⚠️ ${diffs.length} discrepanze rilevate. Si consiglia di allineare (carica dalla stampante o riscrivi la tua config).</div>`;
+  h+='<table><thead><tr><th>Voce</th><th>Software</th><th>Stampante</th></tr></thead><tbody>';
+  diffs.forEach(d=>h+=`<tr><td>${esc(d.area)}</td><td>${esc(d.sw)}</td><td>${esc(d.pr)}</td></tr>`);
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+async function readFromPrinter(compare){
+  const xml=`<printerCommand>
+  <getHeaderLines/>         <!-- 3-216 GET RETAIL HEADER -->
+  <getVatTable/>            <!-- 4-205 GET VAT TABLE -->
+  <getDepartmentParams/>    <!-- 4-202 GET DEPARTMENT -->
+  <getCreditCardNames/>     <!-- 4-207 -->
+  <getTicketDescriptions/>  <!-- 4-210 -->
+  <getCashDescriptions/>    <!-- 4-253 -->
+</printerCommand>`;
+  const r=await sendXml(xml);
+  if(!r.success){ toast("Errore lettura: "+r.code,true); return; }
+  log("rx",`← Dati letti: ${printer.header.length} righe intestazione, ${printer.vat.length} aliquote, ${printer.deps.length} reparti, ${printer.pays.length} pagamenti`);
+  if(compare){
+    const diffs=compareConfig(); renderSync(diffs);
+    if(diffs.length) toast(diffs.length+" discrepanze rilevate",true); else toast("Configurazione allineata");
+  }
+}
+function loadPrinterIntoSoftware(){
+  state.header=clone(printer.header); state.deps=clone(printer.deps); state.pays=clone(printer.pays);
+  renderHead();renderDeps();renderPays();refreshSalePayRefs();renderSale();renderReceipt();save();
+  renderSync(compareConfig()); toast("Configurazione caricata dalla stampante");
+}
+async function pushSoftwareToPrinter(){
+  await programHeader(); await programDeps(); await programPays();
+  printer.header=clone(state.header); printer.deps=clone(state.deps); printer.pays=clone(state.pays);
+  renderSync(compareConfig()); toast("Configurazione software scritta sulla stampante");
+}
+function pingPrinter(){ sendXml(`<printerCommand><queryPrinterStatus/></printerCommand>`); }
+
+// ============ TAB ============
+function setTab(t){
+  document.querySelectorAll(".tab").forEach(e=>e.classList.toggle("active",e.dataset.tab===t));
+  document.querySelectorAll(".panel-sec").forEach(e=>e.classList.remove("active"));
+  $("sec-"+t).classList.add("active");
+}
+
+// ============ INTESTAZIONE ============
+function renderHead(){
+  const c=$("headLines");c.innerHTML="";
+  state.header.forEach((line,i)=>{
+    const d=document.createElement("div");d.className="row";d.style.marginTop="6px";d.style.alignItems="center";
+    const ln=String(i+1).padStart(2,"0");
+    d.innerHTML=`<span class="pill" style="flex:0 0 auto;margin:0">riga ${ln}</span>
+      <input style="flex:1" value="${esc(line)}" maxlength="40"
+        oninput="state.header[${i}]=this.value;markHeadDirty();renderHeadCounts();save()">
+      <span class="pill cnt" data-i="${i}" style="flex:0 0 auto;margin:0">${line.length}/40</span>
+      <button class="danger mini" style="flex:0 0 auto" onclick="state.header.splice(${i},1);renderHead();markHeadDirty();save()">✕</button>`;
+    c.appendChild(d);
+  });
+  renderHeadCounts();updateHeadCount();
+}
+function renderHeadCounts(){
+  document.querySelectorAll("#headLines .cnt").forEach(el=>{
+    const i=+el.dataset.i; el.textContent=(state.header[i]||"").length+"/40";
+  });
+}
+function updateHeadCount(){
+  const n=state.header.length;
+  const el=$("headCount"); if(el) el.textContent=n+"/16 righe";
+  const add=$("btnAddHead"); if(add) add.disabled=n>=16;
+}
+function updateHeadStatus(){
+  const el=$("headStatus"); if(!el)return;
+  el.innerHTML=state.headerCommitted
+    ? "✅ Intestazione confermata in memoria (99)"
+    : "⚠️ Righe non ancora confermate in memoria — usa «Conferma in memoria (99)»";
+}
+function markHeadDirty(){ state.headerCommitted=false; updateHeadStatus(); }
+function addHeadLine(){
+  if(state.header.length>=16){ toast("Massimo 16 righe",true); return; }
+  state.header.push(""); renderHead(); markHeadDirty(); save();
+}
+async function programHeader(){
+  // invio in ordine crescente; la riga 01 azzera le successive (gestito dalla stampante)
+  const cmds=state.header.map((t,i)=>
+    `  <setHeaderLine lineNumber="${String(i+1).padStart(2,'0')}" text="${esc((t+"                                        ").slice(0,40))}" />`).join("\n");
+  const xml=`<printerCommand>\n${cmds}\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){ printer.header=clone(state.header); toast("Righe inviate ("+state.header.length+")"); renderReceipt(); refreshSync(); }
+  else toast("Errore: "+r.code,true);
+}
+async function previewHeader(){
+  const xml=`<printerCommand>\n  <setHeaderLine lineNumber="98" text="" /> <!-- emette documento gestionale di anteprima -->\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){ log("","← Documento gestionale di ANTEPRIMA intestazione emesso (riga 98)"); renderReceipt(); toast("Anteprima emessa (98)"); }
+  else toast("Errore: "+r.code,true);
+}
+async function commitHeader(){
+  const xml=`<printerCommand>\n  <setHeaderLine lineNumber="99" text="" /> <!-- commit definitivo in memoria -->\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){ state.headerCommitted=true; printer.header=clone(state.header); updateHeadStatus(); save(); toast("Intestazione confermata in memoria (99)"); refreshSync(); }
+  else toast("Errore: "+r.code,true);
+}
+
+// ============ IVA ============
+function renderVat(){
+  const tb=$("vatRows");tb.innerHTML="";
+  state.vat.forEach(v=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>🔒 Gr. ${v.g}</td><td><b>${money(v.p)}%</b></td><td>${esc(v.d)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+async function programVat(){
+  // aliquote standard, inviate una sola volta in fase di setup (giornata chiusa)
+  const lines=state.vat.map(v=>`  <setVatTable group="${v.g}" rate="${money(v.p)}" />`).join("\n");
+  const xml=`<printerCommand>\n${lines}\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){ printer.vat=clone(state.vat); toast("Aliquote standard inviate"); renderReceipt(); refreshSync(); }
+  else toast("Errore: "+r.code,true);
+}
+function vatRate(group){const v=state.vat.find(x=>x.g===group);return v?v.p:0;}
+
+// ============ REPARTI ============
+function vatOptions(sel){
+  return state.vat.map(v=>`<option value="${v.g}" ${v.g===sel?"selected":""}>Gr.${v.g} — ${money(v.p)}%</option>`).join("");
+}
+function renderDeps(){
+  const tb=$("depRows");tb.innerHTML="";
+  state.deps.forEach((d,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input style="width:45px" type="number" value="${d.n}" onchange="state.deps[${i}].n=+this.value;save();refreshSaleDepRefs()"></td>
+      <td><input value="${esc(d.desc)}" oninput="state.deps[${i}].desc=this.value;save()"></td>
+      <td><select onchange="state.deps[${i}].vat=+this.value;save();renderReceipt()">${vatOptions(d.vat)}</select></td>
+      <td><select onchange="state.deps[${i}].type=this.value;save()">
+            <option value="beni" ${d.type==="beni"?"selected":""}>Beni</option>
+            <option value="servizi" ${d.type==="servizi"?"selected":""}>Servizi</option></select></td>
+      <td><button class="danger mini" onclick="state.deps.splice(${i},1);renderDeps();refreshSaleDepRefs();save()">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function refreshVatRefs(){ renderDeps(); } // i reparti referenziano l'IVA
+function addDep(){ const n=(Math.max(0,...state.deps.map(d=>d.n))+1);
+  state.deps.push({n:n,desc:"REPARTO "+n,vat:state.vat[0]?.g||1,type:"beni"}); renderDeps(); save(); }
+async function programDeps(){
+  const lines=state.deps.map(d=>
+    `  <setDepartment number="${d.n}" description="${esc(d.desc)}" vatGroup="${d.vat}" type="${d.type}" />`).join("\n");
+  const xml=`<printerCommand>\n${lines}\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){printer.deps=clone(state.deps);toast("Reparti programmati");refreshSaleDepRefs();renderReceipt();refreshSync();}
+  else toast("Errore: "+r.code,true);
+}
+
+// ============ PAGAMENTI ============
+function renderPays(){
+  const tb=$("payRows");tb.innerHTML="";
+  state.pays.forEach((p,i)=>{
+    const tr=document.createElement("tr");
+    const typeOpts=Object.entries(PAY_TYPES).map(([k,v])=>`<option value="${k}" ${+k===p.type?"selected":""}>${k} — ${v}</option>`).join("");
+    tr.innerHTML=`<td><select onchange="state.pays[${i}].type=+this.value;save()">${typeOpts}</select></td>
+      <td><input style="width:55px" type="number" value="${p.idx}" onchange="state.pays[${i}].idx=+this.value;save()"></td>
+      <td><input value="${esc(p.desc)}" oninput="state.pays[${i}].desc=this.value;save();refreshSalePayRefs()"></td>
+      <td><input style="width:75px" type="number" step="0.01" placeholder="—" value="${p.val??''}" oninput="state.pays[${i}].val=this.value===''?null:+this.value;save()"></td>
+      <td><button class="danger mini" onclick="state.pays.splice(${i},1);renderPays();refreshSalePayRefs();save()">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addPay(){ state.pays.push({type:0,idx:0,desc:"NUOVO PAGAMENTO",val:null}); renderPays(); refreshSalePayRefs(); save(); }
+async function programPays(){
+  const cmds=state.pays.map(p=>{
+    if(p.type===0) return `  <setCashDescription index="${p.idx}" description="${esc(p.desc)}" />`;
+    if(p.type===2) return `  <setCreditCardName index="${p.idx}" description="${esc(p.desc)}" />`;
+    if(p.type===3||p.type===4) return `  <setTicket index="${p.idx}" description="${esc(p.desc)}" value="${p.val!=null?money(p.val):'0.00'}" />`;
+    return `  <!-- tipo ${p.type} (${PAY_TYPES[p.type]}): descrizione fissa -->`;
+  }).join("\n");
+  const xml=`<printerCommand>\n${cmds}\n</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){printer.pays=clone(state.pays);toast("Pagamenti programmati");refreshSalePayRefs();refreshSync();}
+  else toast("Errore: "+r.code,true);
+}
+
+// ============ VENDITA / SCONTRINO ============
+function depOptions(sel){return state.deps.map(d=>`<option value="${d.n}" ${d.n===sel?"selected":""}>${d.n} — ${esc(d.desc)}</option>`).join("");}
+function renderSale(){
+  const tb=$("saleRows");tb.innerHTML="";
+  state.sale.forEach((s,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><input value="${esc(s.desc)}" oninput="state.sale[${i}].desc=this.value;save()"></td>
+      <td><input style="width:55px" type="number" step="0.001" value="${s.qty}" oninput="state.sale[${i}].qty=+this.value;save()"></td>
+      <td><input style="width:75px" type="number" step="0.01" value="${s.price}" oninput="state.sale[${i}].price=+this.value;save()"></td>
+      <td><select onchange="state.sale[${i}].dep=+this.value;save()">${depOptions(s.dep)}</select></td>
+      <td><button class="danger mini" onclick="state.sale.splice(${i},1);renderSale();save()">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addSale(){ state.sale.push({desc:"ARTICOLO",qty:1,price:1.00,dep:state.deps[0]?.n||1}); renderSale(); save(); }
+function refreshSaleDepRefs(){ renderSale(); }
+function refreshSalePayRefs(){
+  const sel=$("salePay"); const cur=sel.value;
+  sel.innerHTML=state.pays.map((p,i)=>`<option value="${i}">${esc(p.desc)} (${PAY_TYPES[p.type]})</option>`).join("");
+  if(cur && state.pays[cur]) sel.value=cur;
+}
+function toggleSegue(){
+  $("segueFields").style.display = state.segue.enabled ? "block" : "none";
+  $("salePay").disabled = state.segue.enabled; // il pagamento è forzato a Non riscosso
+  renderReceipt();
+}
+async function emitReceipt(){
+  const op="1";
+  const items=state.sale.map(s=>
+    `  <printRecItem operator="${op}" description="${esc(s.desc)}" quantity="${s.qty}" unitPrice="${money(s.price)}" department="${s.dep}" justification="1" />`).join("\n");
+  const total=state.sale.reduce((t,s)=>t+s.qty*s.price,0);
+  const segue=state.segue.enabled;
+  let pay, customerCmd="";
+  if(segue){
+    pay={type:5,idx:3,desc:"NON RISCOSSO - SEGUE FATTURA"};
+    const tag = state.segue.idType==="piva"
+      ? `  <printRecMessage operator="${op}" messageType="businessTaxCode" message="${esc(state.segue.code)}" /> <!-- 1-060 P.IVA cliente -->`
+      : `  <printRecMessage operator="${op}" messageType="personalTaxCode" message="${esc(state.segue.code)}" /> <!-- 1-061 Cod.Fiscale cliente -->`;
+    customerCmd="\n"+tag;
+  } else {
+    pay=state.pays[$("salePay").value]||state.pays[0];
+  }
+  const assigned=printer.nextDoc; // numero che la STAMPANTE assegnerà
+  const xml=`<printerFiscalReceipt>
+  <beginFiscalReceipt operator="${op}" />
+${items}${customerCmd}
+  <printRecTotal operator="${op}" description="${esc(pay.desc)}" payment="${money(total)}" paymentType="${pay.type}" index="${pay.idx}" />
+  <endFiscalReceipt operator="${op}" />
+</printerFiscalReceipt>`;
+  const r=await sendXml(xml,{
+    receiptNo:docId(assigned),
+    validate:()=>{
+      for(const s of state.sale){ if(!state.deps.find(d=>d.n===s.dep)) return {code:"34 (reparto non programmato)",status:"err"}; }
+      if(segue && !String(state.segue.code).trim()) return {code:"30 (codice cliente mancante)",status:"err"};
+      return null;
+    }
+  });
+  if(r.success){
+    const t=dtNow();
+    // la stampante incrementa il proprio contatore e memorizza l'ultimo documento (per 1-387)
+    printer.lastDoc={n:assigned,serial:printer.serial,date:t.date,time:t.time,amount:total,type:"commerciale"};
+    printer.nextDoc=assigned+1;
+    // il SOFTWARE registra il numero REALE restituito dalla stampante + dati univoci
+    state.lastAssigned=assigned;
+    state.swNextDoc=printer.nextDoc;
+    state.savedDocs.unshift({n:docId(assigned),serial:printer.serial,date:t.date,time:t.time,dateRef:t.dateRef,z:printer.zNum,dn:assigned,amount:total,kind:segue?"segue fattura":"vendita",voided:false,refundedAmt:0,fullyRefunded:false,items:clone(state.sale)});
+    save();
+    log("rx",`← Documento ${docId(assigned)} emesso · matricola ${printer.serial} · ${t.date} ${t.time}`);
+    toast("Scontrino emesso n. "+docId(assigned));
+    renderReceipt(true,pay); renderNumStatus(); renderDocRegistry();
+    if(segue) await emitManagementDoc(total); // documento gestionale da firmare a seguire
+  } else toast("Errore: "+r.code,true);
+}
+// ============ NUMERAZIONE & MATRICOLA ============
+function docId(n){ return String(printer.zNum).padStart(4,"0")+"-"+String(n).padStart(4,"0"); }
+function dtNow(){ const d=new Date(),p=n=>String(n).padStart(2,"0");
+  return {date:`${p(d.getDate())}/${p(d.getMonth()+1)}/${String(d.getFullYear()).slice(2)}`,
+          dateRef:`${p(d.getDate())}${p(d.getMonth()+1)}${d.getFullYear()}`,
+          time:`${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}; }
+function keyboardSale(){
+  // la stampante emette un documento da TASTIERA: il software non ne è a conoscenza -> disallineamento
+  const t=dtNow();
+  printer.lastDoc={n:printer.nextDoc,serial:printer.serial,date:t.date,time:t.time,amount:null,type:"commerciale (tastiera)"};
+  log("","⌨️ Vendita da TASTIERA: la stampante ha emesso il documento "+docId(printer.nextDoc)+" (il software non lo sa)");
+  printer.nextDoc++;
+  renderNumStatus();
+  toast("Vendita tastiera: stampante ora a "+docId(printer.nextDoc));
+}
+async function queryDocNumber(){
+  const r=await sendXml(`<printerCommand><getCommercialDocumentNumber/></printerCommand> <!-- 1-070 -->`);
+  if(!r.success){ toast("Errore: "+r.code,true); return; }
+  state.swNextDoc=printer.nextDoc; save();
+  log("rx",`← 1-070: prossimo documento = ${docId(printer.nextDoc)} (stato: chiuso)`);
+  renderNumStatus(); toast("Software riallineato: prossimo "+docId(printer.nextDoc));
+}
+async function querySerial(){
+  const r=await sendXml(`<printerCommand><getFiscalSerialNumber/> <!-- 3-217 --> <getRtStatus/> <!-- 1-138 device type --></printerCommand>`);
+  if(!r.success){ toast("Errore: "+r.code,true); return; }
+  state.serial=printer.serial; save();
+  log("rx",`← 3-217/1-138: matricola RT = ${printer.serial}`);
+  renderNumStatus(); toast("Matricola: "+printer.serial);
+}
+function renderNumStatus(){
+  const el=$("numStatus"); if(!el) return;
+  const sw=state.swNextDoc!=null?docId(state.swNextDoc):"— (interroga 1-070)";
+  const pr=docId(printer.nextDoc);
+  const mismatch=state.swNextDoc!=null && state.swNextDoc!==printer.nextDoc;
+  let h=`<div>Matricola RT: <b>${state.serial||"— (interroga 3-217)"}</b></div>`;
+  h+=`<div>Prossimo n° secondo il <b>software</b>: ${sw}</div>`;
+  h+=`<div>Prossimo n° secondo la <b>stampante</b>: ${pr}</div>`;
+  if(mismatch) h+=`<div style="color:var(--warn)">⚠️ Disallineato: ci sono vendite da tastiera non viste dal software. Interroga 1-070 per riallineare.</div>`;
+  else if(state.swNextDoc!=null) h+=`<div style="color:var(--accent2)">✅ Software e stampante allineati.</div>`;
+  el.innerHTML=h;
+}
+function renderDocRegistry(){
+  const el=$("docRegistry"); if(!el) return;
+  if(!state.savedDocs.length){ el.innerHTML='<p class="hint">Nessun documento ancora registrato dal software.</p>'; return; }
+  let h='<table><thead><tr><th>N° doc</th><th>Data/ora</th><th>Importo €</th><th>Tipo</th><th></th></tr></thead><tbody>';
+  state.savedDocs.slice(0,12).forEach((r,i)=>{
+    const vendita=(r.kind==="vendita"||r.kind==="segue fattura");
+    const annullabile=vendita && !r.voided && !(r.refundedAmt>0) && state.connected;
+    const resabile=vendita && !r.voided && !r.fullyRefunded && state.connected;
+    let stato='';
+    if(r.voided) stato=' <span class="pill" style="color:var(--err);border-color:var(--err)">ANNULLATO</span>';
+    else if(r.fullyRefunded) stato=' <span class="pill" style="color:var(--warn);border-color:var(--warn)">RESO TOT.</span>';
+    else if(r.refundedAmt>0) stato=' <span class="pill" style="color:var(--warn);border-color:var(--warn)">RESO PARZ.</span>';
+    const btns=(resabile?`<button class="sec mini" onclick="openReso(${i})">Reso</button> `:'')+
+               (annullabile?`<button class="danger mini" onclick="voidDocument(${i})">Annulla</button>`:'');
+    h+=`<tr style="${r.voided?'opacity:.5':''}" title="Matricola ${esc(r.serial)}">`+
+       `<td>${r.n}${stato}</td><td style="font-size:11px">${r.date} ${r.time}</td>`+
+       `<td>${r.amount!=null?money(r.amount):'—'}</td><td>${esc(r.kind)}</td><td>${btns}</td></tr>`;
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+// ============ RESO MERCE ============
+let resoTarget=null, resoDraft=[];
+function openReso(i){
+  const doc=state.savedDocs[i];
+  if(!doc || !doc.items || !doc.items.length){ toast("Documento senza righe disponibili per il reso",true); return; }
+  resoTarget=i;
+  resoDraft=doc.items.map(it=>({...it, ret:0}));
+  $("resoRef").textContent=doc.n;
+  renderResoRows();
+  const c=$("resoCard"); c.style.display="block"; if(c.scrollIntoView) c.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function closeReso(){ resoTarget=null; resoDraft=[]; $("resoCard").style.display="none"; }
+function renderResoRows(){
+  const tb=$("resoRows"); tb.innerHTML="";
+  resoDraft.forEach((it,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${esc(it.desc)}</td><td>${it.qty}</td>
+      <td><input style="width:70px" type="number" min="0" max="${it.qty}" step="0.001" value="${it.ret}" oninput="setResoQty(${i},this.value)"></td>
+      <td>${money(it.price)}</td>`;
+    tb.appendChild(tr);
+  });
+  updateResoTotal();
+}
+function setResoQty(i,v){ let q=Math.max(0,Math.min(+v||0, resoDraft[i].qty)); resoDraft[i].ret=q; updateResoTotal(); }
+function resoTotalVal(){ return resoDraft.reduce((t,it)=>t+it.ret*it.price,0); }
+function updateResoTotal(){ $("resoTotal").textContent=money(resoTotalVal()); }
+async function emitReso(){
+  const doc=state.savedDocs[resoTarget]; if(!doc) return;
+  const lines=resoDraft.filter(it=>it.ret>0);
+  if(!lines.length){ toast("Nessuna quantità da rendere",true); return; }
+  const refTotal=resoTotalVal();
+  const residuo=doc.amount-(doc.refundedAmt||0);
+  const ref=`REFUND ${String(doc.z).padStart(4,"0")} ${String(doc.dn).padStart(4,"0")} ${doc.dateRef} ${doc.serial}`;
+  const assigned=printer.nextDoc;
+  const refundLines=lines.map(it=>
+    `  <printRecRefund operator="1" description="${esc(it.desc)}" quantity="${it.ret}" unitPrice="${money(it.price)}" department="${it.dep}" /> <!-- 1-081 -->`).join("\n");
+  const xml=`<printerFiscalReceipt>
+  <printRecMessage operator="1" messageType="additionalHeader" message="${esc(ref)}" /> <!-- 1-078: apre documento di RESO -->
+${refundLines}
+  <printRecTotal operator="1" description="RIMBORSO" payment="${money(refTotal)}" paymentType="0" index="0" />
+  <endFiscalReceipt operator="1" />
+</printerFiscalReceipt>`;
+  const r=await sendXml(xml,{
+    receiptNo:docId(assigned),
+    validate:()=>{
+      if(doc.serial!==printer.serial) return {code:"17 (matricola diversa)",status:"err"};
+      if(refTotal > residuo + 0.001) return {code:"17 (reso superiore al residuo rimborsabile)",status:"err"};
+      return null;
+    }
+  });
+  if(r.success){
+    const t=dtNow();
+    doc.refundedAmt=(doc.refundedAmt||0)+refTotal;
+    if(doc.refundedAmt >= doc.amount-0.001) doc.fullyRefunded=true;
+    printer.lastDoc={n:assigned,serial:printer.serial,date:t.date,time:t.time,amount:refTotal,type:"reso"};
+    printer.nextDoc=assigned+1;
+    state.lastAssigned=assigned; state.swNextDoc=printer.nextDoc;
+    state.savedDocs.unshift({n:docId(assigned),serial:printer.serial,date:t.date,time:t.time,dateRef:t.dateRef,
+      z:printer.zNum,dn:assigned,amount:-refTotal,kind:"reso",voided:false,ref:doc.n,items:[]});
+    save();
+    log("rx",`← Documento di RESO ${docId(assigned)} emesso (rif. ${doc.n}) · importo ${money(refTotal)}`);
+    toast("Reso emesso: "+docId(assigned));
+    closeReso(); renderNumStatus(); renderDocRegistry(); renderResoPreview(doc,assigned,lines,refTotal);
+  } else toast("Errore reso: "+r.code,true);
+}
+function renderResoPreview(doc,assigned,lines,refTotal){
+  const el=$("receipt");
+  let h=state.header.map(l=>`<div class="c">${esc(l)}</div>`).join("");
+  h+=`<hr><div class="c b">DOCUMENTO COMMERCIALE</div><div class="c">di reso merce</div><hr>`;
+  h+=`<div style="font-size:11px">RESO rif. doc. ${doc.n} del ${doc.date}</div>`;
+  h+=`<div style="font-size:11px">Matricola rif.: ${esc(doc.serial)}</div><hr>`;
+  lines.forEach(it=>{
+    h+=`<div style="display:flex;justify-content:space-between"><span>${esc(it.desc)}</span><span>-${money(it.ret*it.price)}</span></div>`+
+       `<div style="color:#666;font-size:11px">${it.ret} x ${money(it.price)} (rep.${it.dep})</div>`;
+  });
+  h+=`<hr><div style="display:flex;justify-content:space-between" class="b"><span>TOTALE RESO</span><span>-${money(refTotal)}</span></div><hr>`;
+  h+=`<div class="c" style="font-size:11px">${new Date().toLocaleString("it-IT")}</div>`;
+  h+=`<div class="c" style="font-size:11px">DOCUMENTO N. ${docId(assigned)}</div>`;
+  h+=`<div class="c" style="font-size:11px">RT ${printer.serial} — SIMULATO</div>`;
+  el.innerHTML=h;
+}
+// ============ ANNULLAMENTO DOCUMENTO ============
+async function voidDocument(i){
+  const doc=state.savedDocs[i];
+  if(!doc || doc.voided){ toast("Documento già annullato",true); return; }
+  // stringa di riferimento richiesta dal protocollo: VOID zzzz nnnn ddmmyyyy <matricola>
+  const ref=`VOID ${String(doc.z).padStart(4,"0")} ${String(doc.dn).padStart(4,"0")} ${doc.dateRef} ${doc.serial}`;
+  const assigned=printer.nextDoc;
+  // operatore 51 (offset +50) = annullo automatico se documento trovato nel MPD e matricola coincide
+  const xml=`<printerFiscalReceipt>
+  <printRecMessage operator="51" messageType="additionalHeader" message="${esc(ref)}" /> <!-- 1-078 tipo 1: apre documento di annullo -->
+  <endFiscalReceipt operator="51" /> <!-- annullo automatico: doc nel MPD + matricola coincidente -->
+</printerFiscalReceipt>`;
+  const r=await sendXml(xml,{
+    receiptNo:docId(assigned),
+    validate:()=> doc.serial!==printer.serial ? {code:"17 (matricola diversa: annullo non automatico)",status:"err"} : null
+  });
+  if(r.success){
+    const t=dtNow();
+    doc.voided=true;
+    printer.lastDoc={n:assigned,serial:printer.serial,date:t.date,time:t.time,amount:doc.amount,type:"annullo"};
+    printer.nextDoc=assigned+1;
+    state.lastAssigned=assigned; state.swNextDoc=printer.nextDoc;
+    state.savedDocs.unshift({n:docId(assigned),serial:printer.serial,date:t.date,time:t.time,dateRef:t.dateRef,
+      z:printer.zNum,dn:assigned,amount:-doc.amount,kind:"annullo",voided:false,ref:doc.n});
+    save();
+    log("rx",`← Documento di ANNULLO ${docId(assigned)} emesso (riferito a ${doc.n}) · annullo automatico`);
+    toast("Documento "+doc.n+" annullato");
+    renderNumStatus(); renderDocRegistry(); renderVoidPreview(doc,assigned);
+  } else toast("Errore annullo: "+r.code,true);
+}
+function renderVoidPreview(doc,assigned){
+  const el=$("receipt");
+  let h=state.header.map(l=>`<div class="c">${esc(l)}</div>`).join("");
+  h+=`<hr><div class="c b">DOCUMENTO COMMERCIALE</div><div class="c">di annullamento</div><hr>`;
+  h+=`<div style="font-size:11px">ANNULLO del documento:</div>`;
+  h+=`<div style="font-size:11px">N. ${doc.n} del ${doc.date}</div>`;
+  h+=`<div style="font-size:11px">Matricola rif.: ${esc(doc.serial)}</div><hr>`;
+  h+=`<div style="display:flex;justify-content:space-between" class="b"><span>IMPORTO ANNULLATO</span><span>-${money(doc.amount)}</span></div><hr>`;
+  h+=`<div class="c" style="font-size:11px">${new Date().toLocaleString("it-IT")}</div>`;
+  h+=`<div class="c" style="font-size:11px">DOCUMENTO N. ${docId(assigned)}</div>`;
+  h+=`<div class="c" style="font-size:11px">RT ${printer.serial} — SIMULATO</div>`;
+  el.innerHTML=h;
+}
+async function emitManagementDoc(total){
+  const op="1";
+  const idLabel = state.segue.idType==="piva" ? "P.IVA" : "COD.FISCALE";
+  const lines=[
+    {f:4,t:"DOCUMENTO GESTIONALE"},
+    {f:1,t:"Rif. doc. comm. 0001-"+String(state.lastReceiptNo).padStart(4,"0")},
+    {f:1,t:"Cliente: "+state.segue.name},
+    {f:1,t:idLabel+": "+state.segue.code},
+    {f:1,t:state.segue.addr},
+    {f:2,t:"Importo non riscosso: EUR "+money(total)},
+    {f:1,t:"Segue fattura"},
+    {f:1,t:""},
+    {f:1,t:"Firma cliente per ricevuta merce:"},
+    {f:1,t:"_______________________"}
+  ];
+  const body=lines.map(l=>`  <printRecNormal operator="${op}" font="${l.f}" text="${esc(l.t)}" />`).join("\n");
+  const xml=`<printerCommand>
+  <beginManagementDocument operator="${op}" />   <!-- 1-063 -->
+${body}
+  <endManagementDocument operator="${op}" />      <!-- 1-065 -->
+</printerCommand>`;
+  const r=await sendXml(xml);
+  if(r.success){ log("","← Documento gestionale (da firmare) emesso"); renderManagementPreview(total); toast("Documento gestionale emesso"); }
+  else toast("Errore doc. gestionale: "+r.code,true);
+}
+function renderManagementPreview(total){
+  const el=$("receipt");
+  const idLabel = state.segue.idType==="piva" ? "P.IVA" : "COD.FISCALE";
+  let h=`<div style="border-top:3px double #777;margin:16px 0 8px"></div>`;
+  h+=`<div class="c b">DOCUMENTO GESTIONALE</div><div class="c" style="font-size:11px">(non fiscale)</div><hr>`;
+  h+=`<div style="font-size:11px">Rif. doc. comm. ${state.lastAssigned!=null?docId(state.lastAssigned):"----"}</div>`;
+  h+=`<div>Cliente: ${esc(state.segue.name)}</div>`;
+  h+=`<div>${idLabel}: ${esc(state.segue.code)}</div>`;
+  h+=`<div style="font-size:11px">${esc(state.segue.addr)}</div><hr>`;
+  h+=`<div class="b">Importo non riscosso: € ${money(total)}</div>`;
+  h+=`<div>Segue fattura</div><hr>`;
+  h+=`<div style="margin-top:6px">Firma cliente per ricevuta merce:</div>`;
+  h+=`<div style="margin-top:18px">_____________________________</div>`;
+  el.innerHTML+=h;
+}
+
+// ============ ANTEPRIMA SCONTRINO ============
+function renderReceipt(real,pay){
+  const el=$("receipt");
+  let h=state.header.map(l=>`<div class="c">${esc(l)}</div>`).join("");
+  h+=`<hr><div class="c b">DOCUMENTO COMMERCIALE</div><div class="c">di vendita o prestazione</div><hr>`;
+  // calcolo IVA per reparto
+  const vatTot={};
+  let total=0;
+  const lines=state.sale.map(s=>{
+    const sub=s.qty*s.price; total+=sub;
+    const dep=state.deps.find(d=>d.n===s.dep);
+    const grp=dep?dep.vat:0; const rate=vatRate(grp);
+    vatTot[rate]=(vatTot[rate]||0)+sub;
+    const qtyStr = s.qty!==1 ? `${s.qty} x ${money(s.price)} ` : "";
+    return `<div style="display:flex;justify-content:space-between"><span>${esc(s.desc)}</span><span>${money(sub)}</span></div>`+
+           (qtyStr?`<div style="color:#666;font-size:11px">${qtyStr}(rep.${s.dep})</div>`:`<div style="color:#666;font-size:11px">(rep.${s.dep})</div>`);
+  }).join("");
+  h+=lines+`<hr>`;
+  h+=`<div style="display:flex;justify-content:space-between" class="b"><span>TOTALE EURO</span><span>${money(total)}</span></div>`;
+  const p = pay || state.pays[$("salePay")?.value] || state.pays[0];
+  if(p) h+=`<div style="display:flex;justify-content:space-between"><span>${esc(p.desc)}</span><span>${money(total)}</span></div>`;
+  // riepilogo IVA
+  h+=`<hr><div style="font-size:11px;color:#444">`;
+  Object.keys(vatTot).sort((a,b)=>a-b).forEach(rate=>{
+    const imp=vatTot[rate]; const iva=imp - imp/(1+rate/100);
+    h+=`<div style="display:flex;justify-content:space-between"><span>IVA ${rate}% su ${money(imp)}</span><span>${money(iva)}</span></div>`;
+  });
+  h+=`</div><hr>`;
+  if(state.segue.enabled){
+    const idLabel = state.segue.idType==="piva" ? "P.IVA CLIENTE" : "COD.FISCALE CLIENTE";
+    h+=`<div class="c" style="font-size:11px">${idLabel}: ${esc(state.segue.code)}</div>`;
+  }
+  const num = (real && state.lastAssigned!=null) ? docId(state.lastAssigned) : "----";
+  h+=`<div class="c" style="font-size:11px">${new Date().toLocaleString("it-IT")}</div>`;
+  h+=`<div class="c" style="font-size:11px">DOCUMENTO N. ${num}</div>`;
+  h+=`<div class="c" style="font-size:11px">RT ${printer.serial} — SIMULATO</div>`;
+  el.innerHTML=h;
+}
+
+// ============ INIT ============
+function initSelectsAfterRender(){ refreshSalePayRefs(); }
+function initSegueUI(){
+  $("chkSegue").checked=state.segue.enabled;
+  $("segueType").value=state.segue.idType;
+  $("segueCode").value=state.segue.code;
+  $("segueName").value=state.segue.name;
+  $("segueAddr").value=state.segue.addr;
+  toggleSegue();
+}
+renderHead();renderVat();renderDeps();renderPays();renderSale();
+refreshSalePayRefs();refreshEndpoint();setConnUI();initSegueUI();renderReceipt();updateHeadStatus();
+renderNumStatus();renderDocRegistry();
+log("","Simulatore pronto. Imposta l'IP e premi «Connetti».");
+</script>
+</body>
+</html>

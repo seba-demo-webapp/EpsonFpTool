@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PointOfServiceConfig Version="1.0">
+    <ServiceObject Type="FiscalPrinter" Name="EPSON FiscalPrinter">
+        <Device HardwarePath="COM1">
+            <LogicalName Name="FiscalPrinter1"/>
+            <Property Name="DeviceDesc" Value="UPOS Framework FP-90III FiscalPrinter"/>
+            <Property Name="DriverName" Value="EPSON UPOS FiscalDriver"/>
+            <Property Name="InstallFolderPath" Value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\OPOS.NET"/>
+            <Property Name="PhysicalDevice" Value="FP-90III"/>
+            <Property Name="LogicalName" Value="FiscalPrinter1"/>
+        </Device>
+    </ServiceObject>
+    <ServiceObject Type="LineDisplay" Name="EPSON LineDisplay">
+        <Device HardwarePath="COM1">
+            <LogicalName Name="LineDisplay1"/>
+            <Property Name="DeviceDesc" Value="UPOS Framework FP-90III LineDisplay"/>
+            <Property Name="DriverName" Value="EPSON UPOS FiscalDriver"/>
+            <Property Name="InstallFolderPath" Value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\OPOS.NET"/>
+            <Property Name="PhysicalDevice" Value="FP-90IIILD"/>
+            <Property Name="LogicalName" Value="LineDisplay1"/>
+        </Device>
+    </ServiceObject>
+    <ServiceObject Type="CashDrawer" Name="EPSON CashDrawer">
+        <Device HardwarePath="COM1">
+            <LogicalName Name="CashDrawer1"/>
+            <Property Name="DeviceDesc" Value="UPOS Framework FP-90III CashDrawer"/>
+            <Property Name="DriverName" Value="EPSON UPOS FiscalDriver"/>
+            <Property Name="InstallFolderPath" Value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\OPOS.NET"/>
+            <Property Name="PhysicalDevice" Value="FP-90IIICD"/>
+            <Property Name="LogicalName" Value="CashDrawer1"/>
+        </Device>
+    </ServiceObject>
+    <ServiceObject Type="ElectronicJournal" Name="EPSON ElectronicJournal">
+        <Device HardwarePath="COM1">
+            <LogicalName Name="ElectronicJournal1"/>
+            <Property Name="DeviceDesc" Value="UPOS Framework FP-90III ElectronicJournal"/>
+            <Property Name="DriverName" Value="EPSON UPOS FiscalDriver"/>
+            <Property Name="InstallFolderPath" Value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\OPOS.NET"/>
+            <Property Name="PhysicalDevice" Value="FP-90IIIEJ"/>
+            <Property Name="LogicalName" Value="ElectronicJournal1"/>
+        </Device>
+    </ServiceObject>
+</PointOfServiceConfig>

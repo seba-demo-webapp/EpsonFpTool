@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RegSettings>
+  <DeviceInformation>
+    <CategorySetting Name="LineDisplay" Version="1.13">
+      <DeviceSetting Device="FP-90IIILD" LDN="LineDisplay1" Desc="UPOS Framework FP-90III LineDisplay">
+        <PortSetting Value="Serial">
+          <FlowControl Value="3"/>
+          <StopBits Value="0"/>
+          <DataBits Value="8"/>
+          <Parity Value="0"/>
+          <OutputBufferSize Value="4096"/>
+          <BaudRate Value="57600"/>
+          <PortName Value="COM1"/>
+        </PortSetting>
+      </DeviceSetting>
+    </CategorySetting>
+    <CategorySetting Name="FiscalPrinter" Version="1.13">
+      <DeviceSetting Device="FP-90III" LDN="FiscalPrinter1" Desc="UPOS Framework FP-90III FiscalPrinter">
+        <PropertySetting>
+          <Property Name="CashPosID" Value="999"/>
+          <Property Name="PrinterOverwrite" Value="FALSE"/>
+          <Property Name="CDAutoOpen" Value="FALSE"/>
+          <Property Name="CDPollStatus" Value="TRUE"/>
+          <Property Name="EJPollStatus" Value="TRUE"/>
+          <Property Name="FPPollStatus" Value="TRUE"/>
+          <Property Name="PrintQtyIfOne" Value="FALSE"/>
+          <Property Name="ZPlusDayTotal" Value="FALSE"/>
+          <Property Name="FixedPaymentLine" Value="FALSE"/>
+        </PropertySetting>
+        <PortSetting Value="Serial">
+          <FlowControl Value="3"/>
+          <StopBits Value="0"/>
+          <DataBits Value="8"/>
+          <Parity Value="0"/>
+          <OutputBufferSize Value="4096"/>
+          <BaudRate Value="57600"/>
+          <PortName Value="COM1"/>
+        </PortSetting>
+      </DeviceSetting>
+    </CategorySetting>
+    <CategorySetting Name="ElectronicJournal" Version="1.13">
+      <DeviceSetting Device="FP-90IIIEJ" LDN="ElectronicJournal1" Desc="UPOS Framework FP-90III ElectronicJournal">
+        <PortSetting Value="Serial">
+          <FlowControl Value="3"/>
+          <StopBits Value="0"/>
+          <DataBits Value="8"/>
+          <Parity Value="0"/>
+          <OutputBufferSize Value="4096"/>
+          <BaudRate Value="57600"/>
+          <PortName Value="COM1"/>
+        </PortSetting>
+      </DeviceSetting>
+    </CategorySetting>
+    <CategorySetting Name="CashDrawer" Version="1.13">
+      <DeviceSetting Device="FP-90IIICD" LDN="CashDrawer1" Desc="UPOS Framework FP-90III CashDrawer">
+        <PortSetting Value="Serial">
+          <FlowControl Value="3"/>
+          <StopBits Value="0"/>
+          <DataBits Value="8"/>
+          <Parity Value="0"/>
+          <OutputBufferSize Value="4096"/>
+          <BaudRate Value="57600"/>
+          <PortName Value="COM1"/>
+        </PortSetting>
+      </DeviceSetting>
+    </CategorySetting>
+  </DeviceInformation>
+  <CommonInformation>
+    <CommonProperty Name="TraceFileMaxSize" Value="1000"/>
+    <CommonProperty Name="TraceFileName" Value="trace.log"/>
+    <CommonProperty Name="TraceEnable" Value="TRUE"/>
+  </CommonInformation>
+</RegSettings>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cassa RT Epson</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --ok:#22c55e;
+    --warn:#f59e0b; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.45}
+  header{background:linear-gradient(90deg,#0b1220,#16233b);padding:12px 18px;
+         border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  header .sub{color:var(--muted);font-size:12px}
+  .conn{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;
+        background:#0b1220;padding:6px 12px;border-radius:20px;border:1px solid var(--line)}
+  .wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;padding:16px;max-width:1200px;margin:0 auto}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+  .card h2{font-size:13px;margin:0 0 12px;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+  label{display:block;font-size:12px;color:var(--muted);margin:8px 0 3px}
+  input,select{width:100%;background:#0b1220;border:1px solid var(--line);color:var(--txt);
+        border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  button{background:var(--accent);color:#04293f;border:none;border-radius:8px;
+         padding:10px 14px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+  button:hover:not(:disabled){filter:brightness(1.1)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.sec{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  button.danger{background:transparent;color:var(--err);border:1px solid var(--err)}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line);font-size:13px}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase}
+  td.num,th.num{text-align:right}
+  .x{color:var(--err);cursor:pointer;font-weight:700}
+  .tot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;
+       padding-top:12px;border-top:1px dashed var(--line)}
+  .tot b{font-size:24px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .msg{margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px;display:none}
+  .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid var(--ok);color:#86efac}
+  .msg.err{display:block;background:rgba(239,68,68,.12);border:1px solid var(--err);color:#fca5a5}
+  .empty{color:var(--muted);font-size:13px;padding:14px 0;text-align:center}
+  .pay button{flex:1}
+  .pay button.on{outline:2px solid var(--accent);outline-offset:1px}
+  .tabs{display:flex;gap:6px;margin-left:18px}
+  .tab{background:transparent;color:var(--muted);border:1px solid transparent;
+       padding:6px 14px;border-radius:8px;font-weight:600}
+  .tab.on{background:var(--panel2);color:var(--txt);border-color:var(--line)}
+  .hidden{display:none}
+  textarea{width:100%;background:#0b1220;border:1px solid var(--line);color:#a5f3fc;
+        border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+        font-size:12px;line-height:1.4;min-height:150px;resize:vertical}
+  .warn{background:rgba(245,158,11,.12);border:1px solid var(--warn);color:#fcd34d;
+        border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px}
+  .sub-h{font-size:12px;color:var(--muted);margin:14px 0 6px;font-weight:600;
+         text-transform:uppercase;letter-spacing:.5px}
+  pre.resp{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:10px;
+        font-size:11px;color:var(--muted);max-height:200px;overflow:auto;white-space:pre-wrap;margin:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧾 Cassa RT Epson</h1>
+  <nav class="tabs">
+    <button class="tab on" data-view="cassa">Cassa</button>
+    <button class="tab" data-view="config">Configurazione</button>
+  </nav>
+  <span class="conn"><span class="dot" id="dot"></span><span id="connTxt">—</span></span>
+</header>
+
+<div class="wrap" id="view-cassa">
+  <!-- Colonna sinistra: carrello -->
+  <div>
+    <div class="card">
+      <h2>Aggiungi articolo</h2>
+      <div class="row">
+        <div style="flex:2"><label>Descrizione</label><input id="desc" placeholder="es. CAFFE" /></div>
+        <div><label>Prezzo €</label><input id="price" type="number" step="0.01" min="0" placeholder="1.20" /></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Quantità</label><input id="qty" type="number" step="1" min="1" value="1" /></div>
+        <div><label>Reparto IVA</label><input id="dept" type="number" step="1" min="1" value="1" /></div>
+        <div style="display:flex;align-items:flex-end"><button id="add" style="width:100%">+ Aggiungi</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Scontrino</h2>
+      <table>
+        <thead><tr><th>Qtà</th><th>Descrizione</th><th class="num">Prezzo</th><th class="num">Tot</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty">Nessun articolo. Aggiungi qualcosa per iniziare.</div>
+      <div class="tot"><span>Totale</span><b id="total">€ 0,00</b></div>
+    </div>
+  </div>
+
+  <!-- Colonna destra: pagamento + config -->
+  <div>
+    <div class="card">
+      <h2>Pagamento</h2>
+      <div class="row pay" style="margin-bottom:12px">
+        <button class="sec on" data-pay="cash">💶 Contanti</button>
+        <button class="sec" data-pay="card">💳 Carta</button>
+        <button class="sec" data-pay="ticket">🎫 Ticket</button>
+      </div>
+      <button id="print" style="width:100%;padding:14px;font-size:15px">Stampa documento commerciale</button>
+      <div class="row" style="margin-top:10px">
+        <button class="sec" id="clear">Svuota</button>
+        <button class="danger" id="zreport">Chiusura Z</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Stampante</h2>
+      <div class="row">
+        <div style="flex:2"><label>Indirizzo IP</label><input id="ip" placeholder="192.168.1.251" /></div>
+        <div><label>Operatore</label><input id="operator" value="1" /></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Timeout (ms)</label><input id="timeout" type="number" value="10000" /></div>
+        <div><label>Protocollo</label>
+          <select id="https"><option value="false">HTTP</option><option value="true">HTTPS</option></select>
+        </div>
+      </div>
+      <button class="sec" id="saveCfg" style="width:100%;margin-top:10px">Salva configurazione</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== VISTA CONFIGURAZIONE ===================== -->
+<div class="wrap hidden" id="view-config" style="grid-template-columns:1fr 1fr">
+  <!-- Colonna sinistra: i form -->
+  <div>
+    <div class="warn">
+      ℹ️ I comandi seguono la <b>ePOS Fiscal Print Solution Development Guide</b> Rev. U
+      (<code>directIO</code> con campi a larghezza fissa). L'XML è mostrato a destra ed è
+      <b>modificabile</b> prima dell'invio. <b>Intestazione, reparti e IVA richiedono la
+      giornata chiusa</b> (esegui prima la Chiusura Z), altrimenti la stampante risponde Errore 17.
+    </div>
+
+    <div class="card">
+      <h2>Intestazione (3-016)</h2>
+      <input class="hdr" placeholder="Riga 1 — Ragione sociale" />
+      <input class="hdr" placeholder="Riga 2 — Indirizzo" style="margin-top:6px" />
+      <input class="hdr" placeholder="Riga 3 — CAP Città" style="margin-top:6px" />
+      <input class="hdr" placeholder="Riga 4 — P.IVA" style="margin-top:6px" />
+      <input class="hdr" placeholder="Riga 5" style="margin-top:6px" />
+      <div class="row" style="margin-top:10px;align-items:flex-end">
+        <button data-build="header">Genera XML (+ conferma riga 99)</button>
+        <div style="max-width:90px"><label>Leggi riga</label><input id="hdrReadLine" type="number" min="1" max="16" value="1" /></div>
+        <button class="sec" data-build="header:read">Leggi</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Reparto (4-002)</h2>
+      <div class="row">
+        <div><label>N° reparto (1–99)</label><input id="depN" type="number" min="1" max="99" value="1" /></div>
+        <div style="flex:2"><label>Descrizione (max 20)</label><input id="depDesc" maxlength="20" placeholder="BAR/ALIMENTARI" /></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Gruppo IVA</label><input id="depVat" type="number" min="0" max="59" value="1" /></div>
+        <div><label>Tipo</label>
+          <select id="depType"><option value="goods">Beni</option><option value="services">Servizi</option></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button data-build="department">Genera XML</button>
+        <button class="sec" data-build="department:read">Leggi reparto</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Aliquota IVA (4-005)</h2>
+      <div class="row">
+        <div><label>Gruppo (1–9)</label><input id="vatG" type="number" min="1" max="9" value="1" /></div>
+        <div><label>Aliquota %</label><input id="vatR" type="number" step="0.01" min="0" value="22.00" /></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button data-build="vat">Genera XML</button>
+        <button class="sec" data-build="vat:read">Leggi aliquota</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pagamenti (4-007 / 4-010 / 4-053)</h2>
+      <div class="sub-h">Carta di credito (indice 01–10)</div>
+      <div class="row">
+        <div><label>Indice</label><input id="cardIdx" type="number" min="1" max="10" value="1" /></div>
+        <div style="flex:2"><label>Descrizione</label><input id="cardDesc" maxlength="20" placeholder="VISA" /></div>
+        <div style="display:flex;align-items:flex-end"><button data-build="card" style="width:100%">Genera</button></div>
+      </div>
+      <div class="sub-h">Ticket / buoni (indice 01–10)</div>
+      <div class="row">
+        <div><label>Indice</label><input id="tickIdx" type="number" min="1" max="10" value="1" /></div>
+        <div style="flex:2"><label>Descrizione</label><input id="tickDesc" maxlength="20" placeholder="BUONO PASTO" /></div>
+        <div><label>Valore €</label><input id="tickVal" type="number" step="0.01" min="0" value="0" /></div>
+        <div style="display:flex;align-items:flex-end"><button data-build="ticket" style="width:100%">Genera</button></div>
+      </div>
+      <div class="sub-h">Contanti (indice 01–05)</div>
+      <div class="row">
+        <div><label>Indice</label><input id="cashIdx" type="number" min="1" max="5" value="1" /></div>
+        <div style="flex:2"><label>Descrizione</label><input id="cashDesc" maxlength="20" placeholder="CONTANTI" /></div>
+        <div style="display:flex;align-items:flex-end"><button data-build="cash" style="width:100%">Genera</button></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="sec" data-build="payments:read" data-sub="card">Leggi carte</button>
+        <button class="sec" data-build="payments:read" data-sub="ticket">Leggi ticket</button>
+        <button class="sec" data-build="payments:read" data-sub="cash">Leggi contanti</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Operatori / Cassieri (4-013)</h2>
+      <div class="row">
+        <div><label>ID (1–12)</label><input id="opN" type="number" min="1" max="12" value="1" /></div>
+        <div style="flex:2"><label>Descrizione (cognome, max 20)</label><input id="opDesc" maxlength="20" placeholder="ROSSI" /></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Password (0000–9999)</label><input id="opPsw" type="number" min="0" max="9999" value="0" /></div>
+        <div><label>Commissione %</label><input id="opComm" type="number" step="0.01" min="0" max="99.99" value="0" /></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button data-build="operator">Genera XML</button>
+        <button class="sec" data-build="operator:read">Leggi operatore</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data e ora (4-001)</h2>
+      <div class="row">
+        <div style="flex:2"><label>Data</label><input id="dtDate" type="date" /></div>
+        <div><label>Ora</label><input id="dtTime" type="time" /></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button data-build="datetime">Genera XML</button>
+        <button class="sec" data-build="datetime:read">Leggi data/ora</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Flag di configurazione (4-014)</h2>
+      <label>Flag comune</label>
+      <select id="flagSel"></select>
+      <div class="row" style="margin-top:6px">
+        <div><label>N° flag (1–69)</label><input id="flagN" type="number" min="1" max="69" value="4" /></div>
+        <div><label>Valore</label>
+          <select id="flagVal"><option value="1">1 — SI / ON</option><option value="0">0 — NO / OFF</option></select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button data-build="flag">Genera XML</button>
+        <button class="sec" data-build="flag:read">Leggi flag</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Colonna destra: XML da inviare + risposta -->
+  <div>
+    <div class="card">
+      <h2>XML da inviare alla stampante</h2>
+      <textarea id="cfgXml" placeholder="Premi «Genera XML» in uno dei riquadri a sinistra, controlla/modifica qui, poi invia."></textarea>
+      <button id="cfgSend" style="width:100%;margin-top:10px;padding:13px">Invia configurazione alla stampante</button>
+      <div class="msg" id="cfgMsg"></div>
+    </div>
+    <div class="card">
+      <h2>Risposta della stampante</h2>
+      <pre class="resp" id="cfgResp">—</pre>
+    </div>
+  </div>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

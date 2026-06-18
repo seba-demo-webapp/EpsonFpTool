@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JposEntries>
+    <JposEntry logicalName="FiscalPrinter1">
+        <creation factoryClass="jp.co.epson.FiscalDriver.EpsonJposFiscalServiceInstanceFactory" serviceClass="jp.co.epson.FiscalDriver.FiscalPrinter.CommonFiscalPrinterService"/>
+        <vendor name="SEIKO EPSON" url=""/>
+        <jpos category="FiscalPrinter" version="1.13"/>
+        <product description="EPSON FiscalPrinter Device Service" name="EPSON Services for JavaPOS(TM) Standard" url=""/>
+        <prop name="PhysicalDevice" type="String" value="FP-90III"/>
+        <prop name="DeviceDesc" type="String" value="UPOS Framework FP-90III FiscalPrinter"/>
+        <prop name="DriverName" type="String" value="EPSON UPOS FiscalDriver"/>
+        <prop name="InstallFolderPath" type="String" value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\JavaPOS"/>
+    </JposEntry>
+    <JposEntry logicalName="LineDisplay1">
+        <creation factoryClass="jp.co.epson.FiscalDriver.EpsonJposFiscalServiceInstanceFactory" serviceClass="jp.co.epson.FiscalDriver.LineDisplay.CommonLineDisplayService"/>
+        <vendor name="SEIKO EPSON" url=""/>
+        <jpos category="LineDisplay" version="1.13"/>
+        <product description="EPSON LineDisplay Device Service" name="EPSON Services for JavaPOS(TM) Standard" url=""/>
+        <prop name="PhysicalDevice" type="String" value="FP-90IIILD"/>
+        <prop name="DeviceDesc" type="String" value="UPOS Framework FP-90III LineDisplay"/>
+        <prop name="DriverName" type="String" value="EPSON UPOS FiscalDriver"/>
+        <prop name="InstallFolderPath" type="String" value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\JavaPOS"/>
+    </JposEntry>
+    <JposEntry logicalName="CashDrawer1">
+        <creation factoryClass="jp.co.epson.FiscalDriver.EpsonJposFiscalServiceInstanceFactory" serviceClass="jp.co.epson.FiscalDriver.CashDrawer.CommonCashDrawerService"/>
+        <vendor name="SEIKO EPSON" url=""/>
+        <jpos category="CashDrawer" version="1.13"/>
+        <product description="EPSON CashDrawer Device Service" name="EPSON Services for JavaPOS(TM) Standard" url=""/>
+        <prop name="PhysicalDevice" type="String" value="FP-90IIICD"/>
+        <prop name="DeviceDesc" type="String" value="UPOS Framework FP-90III CashDrawer"/>
+        <prop name="DriverName" type="String" value="EPSON UPOS FiscalDriver"/>
+        <prop name="InstallFolderPath" type="String" value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\JavaPOS"/>
+    </JposEntry>
+    <JposEntry logicalName="ElectronicJournal1">
+        <creation factoryClass="jp.co.epson.FiscalDriver.EpsonJposFiscalServiceInstanceFactory" serviceClass="jp.co.epson.FiscalDriver.EJ.CommonEJService"/>
+        <vendor name="SEIKO EPSON" url=""/>
+        <jpos category="ElectronicJournal" version="1.13"/>
+        <product description="EPSON ElectronicJournal Device Service" name="EPSON Services for JavaPOS(TM) Standard" url=""/>
+        <prop name="PhysicalDevice" type="String" value="FP-90IIIEJ"/>
+        <prop name="DeviceDesc" type="String" value="UPOS Framework FP-90III ElectronicJournal"/>
+        <prop name="DriverName" type="String" value="EPSON UPOS FiscalDriver"/>
+        <prop name="InstallFolderPath" type="String" value="C:\Program Files (x86)\EPSON\UPOSDriverForFiscal\JavaPOS"/>
+    </JposEntry>
+</JposEntries>

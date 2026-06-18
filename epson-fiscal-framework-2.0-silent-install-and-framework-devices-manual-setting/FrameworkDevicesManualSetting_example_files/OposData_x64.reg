@@ -1,0 +1,38 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\CashDrawer]
+"CashDrawer1"="FP-90IICD"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\CashDrawer\FP-90IICD]
+@="SOEPSON.CashDrawerService.1130"
+"DriverName"="EPSON UPOS FiscalDriver"
+"InstallFolderPath"="C:\\Program Files (x86)\\EPSON\\UPOSDriverForFiscal\\OPOS"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\ElectronicJournal]
+"ElectronicJournal1"="FP-90IIEJ"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\ElectronicJournal\FP-90IIEJ]
+@="SOEPSON.ElectronicJournalService.1130"
+"DriverName"="EPSON UPOS FiscalDriver"
+"InstallFolderPath"="C:\\Program Files (x86)\\EPSON\\UPOSDriverForFiscal\\OPOS"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\FiscalPrinter]
+"FiscalPrinter1"="FP-90II"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\FiscalPrinter\FP-90II]
+@="SOEPSON.FiscalPrinterService.1130"
+"DriverName"="EPSON UPOS FiscalDriver"
+"InstallFolderPath"="C:\\Program Files (x86)\\EPSON\\UPOSDriverForFiscal\\OPOS"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\LineDisplay]
+"LineDisplay1"="FP-90IILD"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\OLEforRetail\ServiceOPOS\LineDisplay\FP-90IILD]
+@="SOEPSON.LineDisplayService.1130"
+"DriverName"="EPSON UPOS FiscalDriver"
+"InstallFolderPath"="C:\\Program Files (x86)\\EPSON\\UPOSDriverForFiscal\\OPOS"
+
