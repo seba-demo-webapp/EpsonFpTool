@@ -92,13 +92,26 @@ function parseResponse(xml) {
   };
 }
 
+/** Avvolge il payload (senza la propria dichiarazione <?xml?>) in un envelope SOAP,
+ *  formato richiesto dal server FPMate della stampante (verificato via sniffing
+ *  delle richieste generate dalla pagina web di configurazione della stampante). */
+function wrapSoap(xml) {
+  const inner = xml.replace(/^\s*<\?xml[^>]*\?>\s*/i, "");
+  return `<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+<s:Body>
+${inner}
+</s:Body>
+</s:Envelope>`;
+}
+
 /** POST XML alla stampante. Endpoint FPMate tipico: /cgi-bin/fpmate.cgi */
 function sendToPrinter(cfg, xml) {
   return new Promise((resolve) => {
     const lib = cfg.https ? https : http;
     const timeout = cfg.timeoutMs ?? 10000;
-    const path = `/cgi-bin/fpmate.cgi?devid=local_printer&timeout=${timeout}`;
-    const body = Buffer.from(xml, "utf-8");
+    const path = `/cgi-bin/fpmate.cgi?devid=${cfg.devid ?? "local_printer"}&timeout=${timeout}`;
+    const body = Buffer.from(wrapSoap(xml), "utf-8");
 
     const req = lib.request(
       {

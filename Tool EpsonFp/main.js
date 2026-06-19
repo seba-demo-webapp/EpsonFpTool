@@ -10,7 +10,7 @@ function loadConfig() {
   try {
     return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
   } catch {
-    return { ip: "192.168.1.251", https: false, timeoutMs: 10000, operator: "1" };
+    return { ip: "192.168.1.251", https: false, timeoutMs: 10000, operator: "1", devid: "local_printer" };
   }
 }
 

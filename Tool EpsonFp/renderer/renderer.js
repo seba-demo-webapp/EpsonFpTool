@@ -112,6 +112,7 @@ async function loadCfg() {
   $("operator").value = cfg.operator || "1";
   $("timeout").value = cfg.timeoutMs || 10000;
   $("https").value = String(!!cfg.https);
+  $("devid").value = cfg.devid || "local_printer";
   $("connTxt").textContent = cfg.ip || "non configurata";
   $("dot").style.background = cfg.ip ? "var(--ok)" : "var(--muted)";
 }
@@ -122,6 +123,7 @@ $("saveCfg").addEventListener("click", async () => {
     operator: $("operator").value.trim() || "1",
     timeoutMs: parseInt($("timeout").value, 10) || 10000,
     https: $("https").value === "true",
+    devid: $("devid").value.trim() || "local_printer",
   };
   await window.cassa.setConfig(cfg);
   await loadCfg();
