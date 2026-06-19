@@ -53,11 +53,13 @@ function cents(euro) {
 
 // ---------- envelope ----------
 
-function single(command, data, comment) {
+const DEFAULT_TIMEOUT = 6000;
+
+function single(command, data, comment, timeout = DEFAULT_TIMEOUT) {
   const c = comment ? ` comment="${esc(comment)}"` : "";
   return `<?xml version="1.0" encoding="utf-8"?>
 <printerCommand>
-  <directIO command="${command}" data="${data}"${c} />
+  <directIO command="${command}" data="${data}" timeout="${timeout}"${c} />
 </printerCommand>`;
 }
 
@@ -68,9 +70,9 @@ ${directios.map((d) => "  " + d).join("\n")}
 </printerCommands>`;
 }
 
-function dio(command, data, comment) {
+function dio(command, data, comment, timeout = DEFAULT_TIMEOUT) {
   const c = comment ? ` comment="${esc(comment)}"` : "";
-  return `<directIO command="${command}" data="${esc(data)}"${c} />`;
+  return `<directIO command="${command}" data="${esc(data)}" timeout="${timeout}"${c} />`;
 }
 
 // ---------------------------------------------------------------------------
